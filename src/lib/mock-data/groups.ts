@@ -1,0 +1,68 @@
+import type { Group } from "@/lib/types";
+
+export const MOCK_GROUPS: Group[] = [
+  {
+    id: "g1",
+    name: "QC Flood Watch",
+    members: 1240,
+    description: "Real-time flood monitoring and alerts for Quezon City residents.",
+    category: "Safety",
+    emoji: "🌊",
+  },
+  {
+    id: "g2",
+    name: "Diliman Plant Parents",
+    members: 430,
+    description: "Urban gardeners sharing tips on growing plants in QC apartments and homes.",
+    category: "Lifestyle",
+    emoji: "🌿",
+  },
+  {
+    id: "g3",
+    name: "QC Cyclists United",
+    members: 875,
+    description: "Advocating for safer bike lanes and cycling culture in Quezon City.",
+    category: "Sports",
+    emoji: "🚴",
+  },
+  {
+    id: "g4",
+    name: "Batasan Heritage Watchers",
+    members: 210,
+    description: "Documenting and preserving historical sites in the Batasan area.",
+    category: "Culture",
+    emoji: "🏛️",
+  },
+  {
+    id: "g5",
+    name: "QC Parents & Teachers Network",
+    members: 3200,
+    description: "Connecting parents, teachers, and schools across all QC districts.",
+    category: "Education",
+    emoji: "📚",
+  },
+  {
+    id: "g6",
+    name: "Fairview Foodies",
+    members: 560,
+    description: "Discovering and supporting local food businesses in Fairview and nearby areas.",
+    category: "Food",
+    emoji: "🍜",
+  },
+  {
+    id: "g7",
+    name: "QC Street Art Collective",
+    members: 320,
+    description: "Muralists and street artists beautifying QC communities with public art.",
+    category: "Arts",
+    emoji: "🎨",
+  },
+  {
+    id: "g8",
+    name: "Commonwealth Ave Watch",
+    members: 1890,
+    description: "Monitoring traffic, accidents, and road safety along Commonwealth Avenue.",
+    category: "Safety",
+    emoji: "🛣️",
+  },
+];
