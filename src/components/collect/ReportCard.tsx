@@ -23,7 +23,7 @@ export function ReportCard({ report }: { report: Report }) {
   return (
     <div className="bg-background border-b border-border px-4 py-3 active:bg-muted/30 transition-colors cursor-pointer">
       <div className="flex gap-3">
-        <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-muted flex items-center justify-center text-xl">
+        <div className="shrink-0 w-10 h-10 rounded-xl bg-muted flex items-center justify-center text-xl">
           {CATEGORY_EMOJI[report.category]}
         </div>
         <div className="flex-1 min-w-0">
@@ -36,6 +36,13 @@ export function ReportCard({ report }: { report: Report }) {
           <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
             {report.description}
           </p>
+          {report.imageUrl && (
+            <img
+              src={report.imageUrl}
+              alt="Report photo"
+              className="w-full h-28 object-cover rounded-xl mb-2"
+            />
+          )}
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
             <span className="flex items-center gap-1">
               <MapPin size={11} />

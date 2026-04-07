@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { X, Camera, MapPin, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { ReportCategory } from "@/lib/types";
+import type { Report, ReportCategory } from "@/lib/types";
 
 const CATEGORIES: { value: ReportCategory; label: string; emoji: string; color: string }[] = [
   { value: "flooding", label: "Flooding", emoji: "🌊", color: "bg-info/10 border-info/30" },
@@ -19,24 +19,54 @@ const MOCK_BARANGAYS = ["Batasan Hills", "Fairview", "Cubao", "Diliman", "Kamuni
 interface NewReportSheetProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: () => void;
+  onSubmit: (report: Report) => void;
 }
 
 export function NewReportSheet({ open, onClose, onSubmit }: NewReportSheetProps) {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [category, setCategory] = useState<ReportCategory | null>(null);
   const [description, setDescription] = useState("");
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  function handlePhotoSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (photoUrl) URL.revokeObjectURL(photoUrl);
+    setPhotoUrl(URL.createObjectURL(file));
+  }
+
+  function handleRemovePhoto() {
+    if (photoUrl) URL.revokeObjectURL(photoUrl);
+    setPhotoUrl(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
 
   function handleClose() {
     setStep(1);
     setCategory(null);
     setDescription("");
+    if (photoUrl) URL.revokeObjectURL(photoUrl);
+    setPhotoUrl(null);
     onClose();
   }
 
   function handleSubmit() {
+    const cat = CATEGORIES.find((c) => c.value === category)!;
+    const newReport: Report = {
+      id: `user-${Date.now()}`,
+      category: category!,
+      title: `${cat.label} report`,
+      description: description.trim() || "No description provided.",
+      barangay: MOCK_BARANGAYS[3],
+      district: 3,
+      timestamp: new Date().toISOString(),
+      upvotes: 0,
+      status: "pending",
+      imageUrl: photoUrl ?? undefined,
+    };
     handleClose();
-    onSubmit();
+    onSubmit(newReport);
   }
 
   if (!open) return null;
@@ -87,14 +117,34 @@ export function NewReportSheet({ open, onClose, onSubmit }: NewReportSheetProps)
           {step === 2 && (
             <>
               <p className="text-sm font-medium text-foreground mb-3">Add details</p>
-              <div
-                className="flex items-center justify-center w-full h-32 rounded-2xl border-2 border-dashed border-border bg-muted/30 mb-4 cursor-pointer"
-              >
-                <div className="text-center text-muted-foreground">
-                  <Camera size={24} className="mx-auto mb-1" />
-                  <p className="text-xs">Tap to add photo</p>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={handlePhotoSelect}
+              />
+              {photoUrl ? (
+                <div className="relative w-full h-40 rounded-2xl overflow-hidden mb-4">
+                  <img src={photoUrl} alt="Selected photo" className="w-full h-full object-cover" />
+                  <button
+                    onClick={handleRemovePhoto}
+                    className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1.5 hover:bg-black/80 transition-colors"
+                  >
+                    <X size={14} />
+                  </button>
                 </div>
-              </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex flex-col items-center justify-center w-full h-32 rounded-2xl border-2 border-dashed border-border bg-muted/30 mb-4 cursor-pointer hover:bg-muted/50 transition-colors"
+                >
+                  <Camera size={24} className="text-muted-foreground mb-1" />
+                  <p className="text-xs text-muted-foreground">Tap to add photo</p>
+                </button>
+              )}
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -128,9 +178,13 @@ export function NewReportSheet({ open, onClose, onSubmit }: NewReportSheetProps)
                   <span className="text-muted-foreground">Location</span>
                   <span className="font-medium">{MOCK_BARANGAYS[3]}</span>
                 </div>
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between items-center text-sm">
                   <span className="text-muted-foreground">Photo</span>
-                  <span className="font-medium text-muted-foreground">None</span>
+                  {photoUrl ? (
+                    <img src={photoUrl} alt="Report photo" className="w-14 h-14 rounded-xl object-cover" />
+                  ) : (
+                    <span className="font-medium text-muted-foreground">None</span>
+                  )}
                 </div>
                 {description && (
                   <div className="pt-2 border-t border-border text-sm">

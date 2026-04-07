@@ -7,11 +7,12 @@ import { FilterChips } from "./FilterChips";
 import { ReportCard } from "./ReportCard";
 import { NewReportSheet } from "./NewReportSheet";
 import { PageHeader } from "@/components/app/PageHeader";
-import type { ReportCategory } from "@/lib/types";
+import type { Report, ReportCategory } from "@/lib/types";
 
 type Filter = ReportCategory | "all";
 
 export function ReportFeed() {
+  const [reports, setReports] = useState<Report[]>(MOCK_REPORTS);
   const [filter, setFilter] = useState<Filter>("all");
   const [sheetOpen, setSheetOpen] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -20,10 +21,11 @@ export function ReportFeed() {
   useEffect(() => { return () => { clearTimeout(toastTimer.current); }; }, []);
 
   const filtered = filter === "all"
-    ? MOCK_REPORTS
-    : MOCK_REPORTS.filter((r) => r.category === filter);
+    ? reports
+    : reports.filter((r) => r.category === filter);
 
-  function handleSubmit() {
+  function handleSubmit(newReport: Report) {
+    setReports((prev) => [newReport, ...prev]);
     setShowSuccess(true);
     clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setShowSuccess(false), 3000);
@@ -61,7 +63,7 @@ export function ReportFeed() {
       {/* FAB */}
       <button
         onClick={() => setSheetOpen(true)}
-        className="fixed bottom-24 right-4 z-40 w-14 h-14 bg-accent text-white rounded-2xl shadow-lg flex items-center justify-center hover:bg-accent/90 active:scale-95 transition-all"
+        className="fixed bottom-24 right-4 md:bottom-8 md:right-8 z-40 w-14 h-14 bg-accent text-white rounded-2xl shadow-lg flex items-center justify-center hover:bg-accent/90 active:scale-95 transition-all"
       >
         <Plus size={24} strokeWidth={2.5} />
       </button>
