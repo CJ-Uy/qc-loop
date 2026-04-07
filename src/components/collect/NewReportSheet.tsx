@@ -69,7 +69,7 @@ export function NewReportSheet({ open, onClose, onSubmit }: NewReportSheetProps)
 
       const res = await fetch("/api/reports", { method: "POST", body: formData });
       if (!res.ok) return;
-      const report = await res.json();
+      const report = await res.json() as Report;
       handleClose();
       onSubmit(report);
     } finally {

@@ -35,7 +35,7 @@ export function ReportCard({ report, onDelete }: ReportCardProps) {
     e.stopPropagation();
     const res = await fetch(`/api/reports/${report.id}/upvote`, { method: "PATCH" });
     if (res.ok) {
-      const updated = await res.json();
+      const updated = await res.json() as Report;
       setUpvotes(updated.upvotes);
     }
   }

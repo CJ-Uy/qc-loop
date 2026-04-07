@@ -18,7 +18,9 @@ export async function POST(request: Request) {
   const { messages }: { messages: ChatMessage[] } = await request.json();
   const { env } = await getCloudflareContext({ async: true });
 
-  const result = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
+  // Cast to any: wrangler type definitions lag behind available models at runtime
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const result = await (env.AI as any).run("@cf/meta/llama-3.1-8b-instruct", {
     messages: [SYSTEM_MESSAGE, ...messages],
   });
 

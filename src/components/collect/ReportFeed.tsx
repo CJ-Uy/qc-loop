@@ -21,7 +21,7 @@ export function ReportFeed() {
   useEffect(() => {
     fetch("/api/reports")
       .then((r) => r.json())
-      .then((data: Report[]) => setReports(data))
+      .then((data) => setReports(data as Report[]))
       .finally(() => setLoading(false));
     return () => clearTimeout(toastTimer.current);
   }, []);
