@@ -27,6 +27,7 @@ export function NewReportSheet({ open, onClose, onSubmit }: NewReportSheetProps)
   const [category, setCategory] = useState<ReportCategory | null>(null);
   const [description, setDescription] = useState("");
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function handlePhotoSelect(e: React.ChangeEvent<HTMLInputElement>) {
@@ -51,22 +52,29 @@ export function NewReportSheet({ open, onClose, onSubmit }: NewReportSheetProps)
     onClose();
   }
 
-  function handleSubmit() {
-    const cat = CATEGORIES.find((c) => c.value === category)!;
-    const newReport: Report = {
-      id: `user-${Date.now()}`,
-      category: category!,
-      title: `${cat.label} report`,
-      description: description.trim() || "No description provided.",
-      barangay: MOCK_BARANGAYS[3],
-      district: 3,
-      timestamp: new Date().toISOString(),
-      upvotes: 0,
-      status: "pending",
-      imageUrl: photoUrl ?? undefined,
-    };
-    handleClose();
-    onSubmit(newReport);
+  async function handleSubmit() {
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      const cat = CATEGORIES.find((c) => c.value === category)!;
+      const formData = new FormData();
+      formData.append("category", category!);
+      formData.append("title", `${cat.label} report`);
+      formData.append("description", description.trim() || "No description provided.");
+      formData.append("barangay", MOCK_BARANGAYS[3]);
+      formData.append("district", "3");
+
+      const file = fileInputRef.current?.files?.[0];
+      if (file) formData.append("photo", file);
+
+      const res = await fetch("/api/reports", { method: "POST", body: formData });
+      if (!res.ok) return;
+      const report = await res.json();
+      handleClose();
+      onSubmit(report);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   if (!open) return null;
@@ -199,9 +207,10 @@ export function NewReportSheet({ open, onClose, onSubmit }: NewReportSheetProps)
               </div>
               <button
                 onClick={handleSubmit}
-                className="w-full py-3 bg-primary text-white font-semibold rounded-xl"
+                disabled={submitting}
+                className="w-full py-3 bg-primary text-white font-semibold rounded-xl disabled:opacity-60"
               >
-                Submit Report
+                {submitting ? "Submitting…" : "Submit Report"}
               </button>
             </>
           )}
