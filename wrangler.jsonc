@@ -1,11 +1,3 @@
-/**
- * For more details on how to configure Wrangler, refer to:
- * https://developers.cloudflare.com/workers/wrangler/configuration/
- */
-/**
- * For more details on how to configure Wrangler, refer to:
- * https://developers.cloudflare.com/workers/wrangler/configuration/
- */
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "qc-loop",
@@ -20,38 +12,33 @@
 		"directory": ".open-next/assets"
 	},
 	"images": {
-		// Enable image optimization
-		// see https://opennext.js.org/cloudflare/howtos/image
 		"binding": "IMAGES"
 	},
 	"services": [
 		{
-			// Self-reference service binding, the service name must match the worker name
-			// see https://opennext.js.org/cloudflare/caching
 			"binding": "WORKER_SELF_REFERENCE",
 			"service": "qc-loop"
 		}
 	],
+	"r2_buckets": [
+		{
+			"binding": "QC_BUCKET",
+			"bucket_name": "qc-loop"
+		}
+	],
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "qc-loop",
+			"database_id": "4c9577b7-1e2b-4220-8e51-71a883dbd8ed",
+			"migrations_dir": "migrations"
+		}
+	],
+	"ai": {
+		"binding": "AI"
+	},
 	"observability": {
 		"enabled": true
 	},
 	"upload_source_maps": true
-	/**
-	 * Smart Placement
-	 * https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
-	 */
-	// "placement": {  "mode": "smart" }
-	/**
-	 * Bindings
-	 * Bindings allow your Worker to interact with resources on the Cloudflare Developer Platform, including
-	 * databases, object storage, AI inference, real-time communication and more.
-	 * https://developers.cloudflare.com/workers/runtime-apis/bindings/
-	 */
-	/**
-	 * Environment Variables
-	 * https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
-	 * Note: Use secrets to store sensitive data.
-	 * https://developers.cloudflare.com/workers/configuration/secrets/
-	 */
-	// "vars": {  "MY_VARIABLE": "production_value" }
 }
