@@ -3,7 +3,6 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { toReport, type ReportRow } from "@/db";
 import type { Report } from "@/lib/types";
 
-export const runtime = "edge";
 
 export async function GET() {
   const { env } = await getCloudflareContext({ async: true });

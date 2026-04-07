@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { toReport, type ReportRow } from "@/db";
 
-export const runtime = "edge";
 
 export async function PATCH(
   _request: Request,
