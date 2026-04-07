@@ -1,34 +1,19 @@
 import { NextResponse } from "next/server";
-import { desc } from "drizzle-orm";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { getDb } from "@/db";
-import { reports } from "@/db/schema";
+import { toReport, type ReportRow } from "@/db";
 import type { Report } from "@/lib/types";
 
 export const runtime = "edge";
 
 export async function GET() {
-  const db = await getDb();
-  const rows = await db.select().from(reports).orderBy(desc(reports.timestamp));
-
-  const result: Report[] = rows.map((r) => ({
-    id: r.id,
-    category: r.category as Report["category"],
-    title: r.title,
-    description: r.description,
-    barangay: r.barangay,
-    district: r.district,
-    timestamp: r.timestamp,
-    upvotes: r.upvotes,
-    status: r.status as Report["status"],
-    imageUrl: r.image_key ? `/api/reports/${r.id}/image` : undefined,
-  }));
-
-  return NextResponse.json(result);
+  const { env } = await getCloudflareContext({ async: true });
+  const { results } = await env.DB.prepare(
+    "SELECT * FROM reports ORDER BY timestamp DESC"
+  ).all<ReportRow>();
+  return NextResponse.json(results.map(toReport));
 }
 
 export async function POST(request: Request) {
-  const db = await getDb();
   const { env } = await getCloudflareContext({ async: true });
 
   const formData = await request.formData();
@@ -53,29 +38,14 @@ export async function POST(request: Request) {
 
   const timestamp = new Date().toISOString();
 
-  await db.insert(reports).values({
-    id,
-    category,
-    title,
-    description,
-    barangay,
-    district,
-    timestamp,
-    upvotes: 0,
-    status: "pending",
-    image_key,
-  });
+  await env.DB.prepare(
+    `INSERT INTO reports (id, category, title, description, barangay, district, timestamp, upvotes, status, image_key)
+     VALUES (?, ?, ?, ?, ?, ?, ?, 0, 'pending', ?)`
+  ).bind(id, category, title, description, barangay, district, timestamp, image_key).run();
 
   const report: Report = {
-    id,
-    category,
-    title,
-    description,
-    barangay,
-    district,
-    timestamp,
-    upvotes: 0,
-    status: "pending",
+    id, category, title, description, barangay, district, timestamp,
+    upvotes: 0, status: "pending",
     imageUrl: image_key ? `/api/reports/${id}/image` : undefined,
   };
 

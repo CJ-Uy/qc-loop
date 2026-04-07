@@ -1,7 +1,4 @@
-import { eq } from "drizzle-orm";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { getDb } from "@/db";
-import { reports } from "@/db/schema";
 
 export const runtime = "edge";
 
@@ -10,10 +7,12 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const db = await getDb();
   const { env } = await getCloudflareContext({ async: true });
 
-  const [row] = await db.select().from(reports).where(eq(reports.id, id));
+  const row = await env.DB.prepare(
+    "SELECT image_key FROM reports WHERE id = ?"
+  ).bind(id).first<{ image_key: string | null }>();
+
   if (!row?.image_key) return new Response("Not found", { status: 404 });
 
   const object = await env.QC_BUCKET.get(row.image_key);
