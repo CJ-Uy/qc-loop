@@ -18,7 +18,7 @@ export interface Report {
   timestamp: string;
   upvotes: number;
   status: ReportStatus;
-  imageUrl?: string;
+  imageUrls?: string[];
 }
 
 export interface FloodZone {

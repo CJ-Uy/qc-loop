@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { X, Camera, MapPin, ChevronRight } from "lucide-react";
+import { X, Camera, MapPin, ChevronRight, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Report, ReportCategory } from "@/lib/types";
 
@@ -16,6 +16,8 @@ const CATEGORIES: { value: ReportCategory; label: string; emoji: string; color: 
 
 const MOCK_BARANGAYS = ["Batasan Hills", "Fairview", "Cubao", "Diliman", "Kamuning", "Project 6", "Commonwealth", "Novaliches"];
 
+interface PhotoEntry { file: File; url: string; }
+
 interface NewReportSheetProps {
   open: boolean;
   onClose: () => void;
@@ -26,7 +28,7 @@ export function NewReportSheet({ open, onClose, onSubmit }: NewReportSheetProps)
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [category, setCategory] = useState<ReportCategory | null>(null);
   const [description, setDescription] = useState("");
-  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [photos, setPhotos] = useState<PhotoEntry[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -34,16 +36,18 @@ export function NewReportSheet({ open, onClose, onSubmit }: NewReportSheetProps)
   const selectedCat = CATEGORIES.find((c) => c.value === category) ?? null;
 
   function handlePhotoSelect(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (photoUrl) URL.revokeObjectURL(photoUrl);
-    setPhotoUrl(URL.createObjectURL(file));
+    const files = Array.from(e.target.files ?? []);
+    if (!files.length) return;
+    const newEntries = files.map((file) => ({ file, url: URL.createObjectURL(file) }));
+    setPhotos((prev) => [...prev, ...newEntries]);
+    e.target.value = ""; // reset so same file can be re-added if needed
   }
 
-  function handleRemovePhoto() {
-    if (photoUrl) URL.revokeObjectURL(photoUrl);
-    setPhotoUrl(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
+  function removePhoto(index: number) {
+    setPhotos((prev) => {
+      URL.revokeObjectURL(prev[index].url);
+      return prev.filter((_, i) => i !== index);
+    });
   }
 
   function handleClose() {
@@ -51,8 +55,8 @@ export function NewReportSheet({ open, onClose, onSubmit }: NewReportSheetProps)
     setCategory(null);
     setDescription("");
     setError(null);
-    if (photoUrl) URL.revokeObjectURL(photoUrl);
-    setPhotoUrl(null);
+    photos.forEach((p) => URL.revokeObjectURL(p.url));
+    setPhotos([]);
     onClose();
   }
 
@@ -68,9 +72,7 @@ export function NewReportSheet({ open, onClose, onSubmit }: NewReportSheetProps)
       formData.append("description", description.trim() || "No description provided.");
       formData.append("barangay", MOCK_BARANGAYS[3]);
       formData.append("district", "3");
-
-      const file = fileInputRef.current?.files?.[0];
-      if (file) formData.append("photo", file);
+      photos.forEach((p) => formData.append("photo", p.file));
 
       const res = await fetch("/api/reports", { method: "POST", body: formData });
       if (!res.ok) {
@@ -91,10 +93,7 @@ export function NewReportSheet({ open, onClose, onSubmit }: NewReportSheetProps)
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center">
-      {/* Backdrop — pointer-events-none on touch so it doesn't eat scroll */}
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={handleClose} />
-
-      {/* Sheet — overflow-y-scroll + overscroll-contain for reliable iOS scroll */}
       <div className="relative w-full max-w-107.5 bg-background rounded-t-3xl max-h-[85dvh] overflow-y-scroll overscroll-contain">
         {/* Handle */}
         <div className="flex justify-center pt-3 pb-1">
@@ -113,7 +112,7 @@ export function NewReportSheet({ open, onClose, onSubmit }: NewReportSheetProps)
         </div>
 
         <div className="p-4">
-          {/* ── Step 1: pick category ── */}
+          {/* ── Step 1 ── */}
           {step === 1 && (
             <>
               <p className="text-sm font-medium text-foreground mb-3">What are you reporting?</p>
@@ -136,17 +135,13 @@ export function NewReportSheet({ open, onClose, onSubmit }: NewReportSheetProps)
             </>
           )}
 
-          {/* ── Step 2: add details ── */}
+          {/* ── Step 2 ── */}
           {step === 2 && (
             <>
-              {/* Selected category indicator */}
               {selectedCat && (
                 <button
                   onClick={() => setStep(1)}
-                  className={cn(
-                    "flex items-center gap-2 px-3 py-1.5 rounded-xl border mb-4 text-sm font-medium",
-                    selectedCat.color
-                  )}
+                  className={cn("flex items-center gap-2 px-3 py-1.5 rounded-xl border mb-4 text-sm font-medium w-full", selectedCat.color)}
                 >
                   <span>{selectedCat.emoji}</span>
                   <span>{selectedCat.label}</span>
@@ -154,40 +149,60 @@ export function NewReportSheet({ open, onClose, onSubmit }: NewReportSheetProps)
                 </button>
               )}
 
-              <p className="text-sm font-medium text-foreground mb-3">Add details</p>
+              <p className="text-sm font-medium text-foreground mb-3">Add photos</p>
+
+              {/* Hidden file input — no capture so gallery is accessible */}
               <input
                 ref={fileInputRef}
                 type="file"
                 accept="image/*"
-                capture="environment"
+                multiple
                 className="hidden"
                 onChange={handlePhotoSelect}
               />
-              {photoUrl ? (
-                <div className="relative w-full h-40 rounded-2xl overflow-hidden mb-4">
-                  <img src={photoUrl} alt="Selected photo" className="w-full h-full object-cover" />
+
+              {/* Photo grid */}
+              {photos.length > 0 && (
+                <div className="grid grid-cols-3 gap-2 mb-3">
+                  {photos.map((p, i) => (
+                    <div key={i} className="relative aspect-square rounded-xl overflow-hidden">
+                      <img src={p.url} alt="" className="w-full h-full object-cover" />
+                      <button
+                        onClick={() => removePhoto(i)}
+                        className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
+                  {/* Add more tile */}
                   <button
-                    onClick={handleRemovePhoto}
-                    className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1.5 hover:bg-black/80 transition-colors"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="aspect-square rounded-xl border-2 border-dashed border-border bg-muted/30 flex flex-col items-center justify-center gap-1 hover:bg-muted/50 transition-colors"
                   >
-                    <X size={14} />
+                    <Plus size={20} className="text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">Add</span>
                   </button>
                 </div>
-              ) : (
+              )}
+
+              {photos.length === 0 && (
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   className="flex flex-col items-center justify-center w-full h-32 rounded-2xl border-2 border-dashed border-border bg-muted/30 mb-4 cursor-pointer hover:bg-muted/50 transition-colors"
                 >
                   <Camera size={24} className="text-muted-foreground mb-1" />
-                  <p className="text-xs text-muted-foreground">Tap to add photo</p>
+                  <p className="text-xs text-muted-foreground">Tap to add photos</p>
+                  <p className="text-xs text-muted-foreground/60 mt-0.5">You can select multiple</p>
                 </button>
               )}
+
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Describe the issue… (e.g., knee-deep floodwater blocking the road)"
-                className="w-full h-28 px-3 py-2.5 text-sm border border-border rounded-xl bg-background resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
+                className="w-full h-28 px-3 py-2.5 text-sm border border-border rounded-xl bg-background resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground mt-3"
               />
               <div className="flex items-center gap-2 mt-3 p-3 bg-muted/50 rounded-xl">
                 <MapPin size={14} className="text-primary shrink-0" />
@@ -204,25 +219,27 @@ export function NewReportSheet({ open, onClose, onSubmit }: NewReportSheetProps)
             </>
           )}
 
-          {/* ── Step 3: review ── */}
+          {/* ── Step 3 ── */}
           {step === 3 && (
             <>
               <p className="text-sm font-medium text-foreground mb-3">Review your report</p>
               <div className="bg-muted/30 rounded-2xl p-4 mb-4 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Category</span>
-                  <span className="font-medium">
-                    {selectedCat?.emoji} {selectedCat?.label}
-                  </span>
+                  <span className="font-medium">{selectedCat?.emoji} {selectedCat?.label}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Location</span>
                   <span className="font-medium">{MOCK_BARANGAYS[3]}</span>
                 </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-muted-foreground">Photo</span>
-                  {photoUrl ? (
-                    <img src={photoUrl} alt="Report photo" className="w-14 h-14 rounded-xl object-cover" />
+                <div className="flex justify-between items-start text-sm">
+                  <span className="text-muted-foreground">Photos</span>
+                  {photos.length > 0 ? (
+                    <div className="flex gap-1">
+                      {photos.map((p, i) => (
+                        <img key={i} src={p.url} alt="" className="w-12 h-12 rounded-lg object-cover" />
+                      ))}
+                    </div>
                   ) : (
                     <span className="font-medium text-muted-foreground">None</span>
                   )}

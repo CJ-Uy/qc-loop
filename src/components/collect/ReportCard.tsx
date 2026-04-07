@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ThumbsUp, MapPin, Clock, Trash2 } from "lucide-react";
+import { ThumbsUp, MapPin, Clock, Trash2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/app/StatusBadge";
 import type { Report, ReportStatus } from "@/lib/types";
@@ -40,6 +40,7 @@ export function ReportCard({ report, onDelete, isAdmin = false }: ReportCardProp
   const [currentStatus, setCurrentStatus] = useState<ReportStatus>(report.status);
   const [deleting, setDeleting] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
   async function handleUpvote(e: React.MouseEvent) {
     e.stopPropagation();
@@ -77,6 +78,26 @@ export function ReportCard({ report, onDelete, isAdmin = false }: ReportCardProp
   }
 
   return (
+    <>
+    {lightboxUrl && (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+        onClick={() => setLightboxUrl(null)}
+      >
+        <button
+          className="absolute top-4 right-4 p-2 rounded-full bg-black/50 text-white"
+          onClick={() => setLightboxUrl(null)}
+        >
+          <X size={20} />
+        </button>
+        <img
+          src={lightboxUrl}
+          alt=""
+          className="max-w-[92vw] max-h-[85dvh] rounded-2xl object-contain"
+          onClick={(e) => e.stopPropagation()}
+        />
+      </div>
+    )}
     <div className="bg-background border-b border-border px-4 py-3 transition-colors">
       <div className="flex gap-3">
         <div className="shrink-0 w-10 h-10 rounded-xl bg-muted flex items-center justify-center text-xl">
@@ -104,12 +125,18 @@ export function ReportCard({ report, onDelete, isAdmin = false }: ReportCardProp
             {report.description}
           </p>
 
-          {report.imageUrl && (
-            <img
-              src={report.imageUrl}
-              alt="Report photo"
-              className="w-full h-28 object-cover rounded-xl mb-2"
-            />
+          {report.imageUrls && report.imageUrls.length > 0 && (
+            <div className="flex gap-1.5 mb-2 overflow-x-auto pb-0.5">
+              {report.imageUrls.map((url, i) => (
+                <button
+                  key={i}
+                  onClick={(e) => { e.stopPropagation(); setLightboxUrl(url); }}
+                  className="shrink-0 w-20 h-20 rounded-xl overflow-hidden border border-border"
+                >
+                  <img src={url} alt="" className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
           )}
 
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
@@ -152,5 +179,6 @@ export function ReportCard({ report, onDelete, isAdmin = false }: ReportCardProp
         </div>
       </div>
     </div>
+    </>
   );
 }
