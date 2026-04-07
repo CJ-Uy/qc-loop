@@ -5,17 +5,12 @@ import { Send } from "lucide-react";
 import { ChatBubble } from "./ChatBubble";
 import { SuggestionChips } from "./SuggestionChips";
 import { PageHeader } from "@/components/app/PageHeader";
-import { CHAT_TOPICS, DEFAULT_RESPONSE, SUGGESTION_CHIPS } from "@/lib/mock-data/chat-responses";
+import { SUGGESTION_CHIPS } from "@/lib/mock-data/chat-responses";
 import type { ChatMessage } from "@/lib/types";
 
-function getBotResponse(input: string): string {
-  const lower = input.toLowerCase();
-  for (const topic of CHAT_TOPICS) {
-    if (topic.keywords.some((kw) => lower.includes(kw))) {
-      return topic.response;
-    }
-  }
-  return DEFAULT_RESPONSE;
+interface ApiMessage {
+  role: "user" | "assistant";
+  content: string;
 }
 
 export function ChatInterface() {
@@ -31,16 +26,14 @@ export function ChatInterface() {
   const [isTyping, setIsTyping] = useState(false);
   const [showChips, setShowChips] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const typingTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-
-  useEffect(() => { return () => { clearTimeout(typingTimer.current); }; }, []);
+  const conversationRef = useRef<ApiMessage[]>([]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
 
-  function sendMessage(text: string) {
-    if (!text.trim()) return;
+  async function sendMessage(text: string) {
+    if (!text.trim() || isTyping) return;
 
     const userMsg: ChatMessage = {
       id: `u-${Date.now()}`,
@@ -54,26 +47,49 @@ export function ChatInterface() {
     setShowChips(false);
     setIsTyping(true);
 
-    typingTimer.current = setTimeout(() => {
+    conversationRef.current = [
+      ...conversationRef.current,
+      { role: "user", content: text },
+    ];
+
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: conversationRef.current }),
+      });
+
+      const data: { response: string } = await res.json();
+
+      conversationRef.current = [
+        ...conversationRef.current,
+        { role: "assistant", content: data.response },
+      ];
+
       const botMsg: ChatMessage = {
         id: `b-${Date.now()}`,
         role: "bot",
-        content: getBotResponse(text),
+        content: data.response,
         timestamp: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, botMsg]);
+    } catch {
+      const errMsg: ChatMessage = {
+        id: `err-${Date.now()}`,
+        role: "bot",
+        content: "Sorry, I couldn't connect right now. Please try again.",
+        timestamp: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, errMsg]);
+    } finally {
       setIsTyping(false);
-    }, 900);
+    }
   }
 
   return (
     <div className="flex flex-col h-full">
-      <PageHeader
-        title="QCare"
-        subtitle="Kaya — your city assistant"
-      />
+      <PageHeader title="QCare" subtitle="Kaya — your city assistant" />
 
-      {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3">
         {messages.map((msg) => (
           <ChatBubble key={msg.id} message={msg} />
@@ -97,12 +113,10 @@ export function ChatInterface() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Suggestion chips */}
       {showChips && (
         <SuggestionChips chips={SUGGESTION_CHIPS} onSelect={sendMessage} />
       )}
 
-      {/* Input */}
       <div className="px-4 py-3 border-t border-border flex gap-2 items-end bg-background">
         <textarea
           value={input}
