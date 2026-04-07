@@ -1,4 +1,7 @@
-import { ThumbsUp, MapPin, Clock } from "lucide-react";
+"use client";
+
+import { useState } from "react";
+import { ThumbsUp, MapPin, Clock, Trash2 } from "lucide-react";
 import { StatusBadge } from "@/components/app/StatusBadge";
 import type { Report } from "@/lib/types";
 
@@ -19,9 +22,37 @@ function timeAgo(timestamp: string): string {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
-export function ReportCard({ report }: { report: Report }) {
+interface ReportCardProps {
+  report: Report;
+  onDelete: (id: string) => void;
+}
+
+export function ReportCard({ report, onDelete }: ReportCardProps) {
+  const [upvotes, setUpvotes] = useState(report.upvotes);
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleUpvote(e: React.MouseEvent) {
+    e.stopPropagation();
+    const res = await fetch(`/api/reports/${report.id}/upvote`, { method: "PATCH" });
+    if (res.ok) {
+      const updated = await res.json();
+      setUpvotes(updated.upvotes);
+    }
+  }
+
+  async function handleDelete(e: React.MouseEvent) {
+    e.stopPropagation();
+    setDeleting(true);
+    const res = await fetch(`/api/reports/${report.id}`, { method: "DELETE" });
+    if (res.ok) {
+      onDelete(report.id);
+    } else {
+      setDeleting(false);
+    }
+  }
+
   return (
-    <div className="bg-background border-b border-border px-4 py-3 active:bg-muted/30 transition-colors cursor-pointer">
+    <div className="bg-background border-b border-border px-4 py-3 transition-colors">
       <div className="flex gap-3">
         <div className="shrink-0 w-10 h-10 rounded-xl bg-muted flex items-center justify-center text-xl">
           {CATEGORY_EMOJI[report.category]}
@@ -31,7 +62,17 @@ export function ReportCard({ report }: { report: Report }) {
             <p className="font-semibold text-sm text-foreground leading-snug line-clamp-2">
               {report.title}
             </p>
-            <StatusBadge status={report.status} />
+            <div className="flex items-center gap-1 shrink-0">
+              <StatusBadge status={report.status} />
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="p-1 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors disabled:opacity-40"
+                aria-label="Delete report"
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
           </div>
           <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
             {report.description}
@@ -52,10 +93,14 @@ export function ReportCard({ report }: { report: Report }) {
               <Clock size={11} />
               {timeAgo(report.timestamp)}
             </span>
-            <span className="flex items-center gap-1 ml-auto text-muted-foreground">
+            <button
+              onClick={handleUpvote}
+              className="flex items-center gap-1 ml-auto hover:text-primary transition-colors"
+              aria-label="Upvote"
+            >
               <ThumbsUp size={11} />
-              {report.upvotes}
-            </span>
+              {upvotes}
+            </button>
           </div>
         </div>
       </div>
