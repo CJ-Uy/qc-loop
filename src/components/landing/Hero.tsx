@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 export function Hero() {
@@ -14,13 +15,9 @@ export function Hero() {
       />
 
       {/* Logo */}
-      <div className="relative mb-8">
-        <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-4 py-2">
-          <div className="w-6 h-6 rounded-full bg-accent flex items-center justify-center">
-            <span className="text-xs font-black text-white">QC</span>
-          </div>
-          <span className="text-sm font-semibold tracking-wide">QC Loop</span>
-        </div>
+      <div className="relative mb-8 flex flex-col items-center gap-3">
+        <Image src="/logo.png" alt="QC Loop" width={80} height={80} className="rounded-3xl shadow-xl" />
+        <span className="text-sm font-semibold tracking-widest uppercase text-white/60">QC Loop</span>
       </div>
 
       {/* Headline */}

@@ -27,7 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <head>
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <link rel="icon" href="/logo.png" type="image/png" />
         <link rel="apple-touch-icon" href="/icons/icon-192.svg" />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>

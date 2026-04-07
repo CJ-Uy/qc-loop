@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { MapPin, Map, Users, MessageCircle, Star } from "lucide-react";
@@ -18,9 +19,12 @@ export function SideNav() {
 
   return (
     <nav className="w-56 shrink-0 border-r border-border flex flex-col py-6 px-3 bg-background sticky top-0 h-screen">
-      <div className="mb-8 px-3">
-        <h1 className="text-xl font-bold text-foreground">QC Loop</h1>
-        <p className="text-xs text-muted-foreground">Quezon City</p>
+      <div className="mb-8 px-3 flex items-center gap-3">
+        <Image src="/logo.png" alt="QC Loop" width={36} height={36} className="rounded-xl shrink-0" />
+        <div>
+          <h1 className="text-base font-bold text-foreground leading-tight">QC Loop</h1>
+          <p className="text-xs text-muted-foreground">Quezon City</p>
+        </div>
       </div>
       <div className="flex flex-col gap-0.5">
         {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
