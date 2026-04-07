@@ -2,17 +2,24 @@
 
 import { useState } from "react";
 import { ThumbsUp, MapPin, Clock, Trash2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/app/StatusBadge";
-import type { Report } from "@/lib/types";
+import type { Report, ReportStatus } from "@/lib/types";
 
 const CATEGORY_EMOJI: Record<Report["category"], string> = {
-  flooding: "🌊",
-  trash: "🗑️",
-  "bad-driver": "🚗",
-  accident: "⚠️",
-  biodiversity: "🌿",
-  other: "📌",
+  flooding:      "🌊",
+  trash:         "🗑️",
+  "bad-driver":  "🚗",
+  accident:      "⚠️",
+  biodiversity:  "🌿",
+  other:         "📌",
 };
+
+const STATUS_OPTIONS: { value: ReportStatus; label: string; active: string; idle: string }[] = [
+  { value: "pending",  label: "Pending",  active: "bg-warning/20 text-warning border-warning/40",   idle: "bg-muted text-muted-foreground border-border hover:bg-muted/80" },
+  { value: "verified", label: "Verified", active: "bg-success/20 text-success border-success/40",   idle: "bg-muted text-muted-foreground border-border hover:bg-muted/80" },
+  { value: "resolved", label: "Resolved", active: "bg-info/20 text-info border-info/40",             idle: "bg-muted text-muted-foreground border-border hover:bg-muted/80" },
+];
 
 function timeAgo(timestamp: string): string {
   const diff = Date.now() - new Date(timestamp).getTime();
@@ -25,11 +32,14 @@ function timeAgo(timestamp: string): string {
 interface ReportCardProps {
   report: Report;
   onDelete: (id: string) => void;
+  isAdmin?: boolean;
 }
 
-export function ReportCard({ report, onDelete }: ReportCardProps) {
+export function ReportCard({ report, onDelete, isAdmin = false }: ReportCardProps) {
   const [upvotes, setUpvotes] = useState(report.upvotes);
+  const [currentStatus, setCurrentStatus] = useState<ReportStatus>(report.status);
   const [deleting, setDeleting] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
 
   async function handleUpvote(e: React.MouseEvent) {
     e.stopPropagation();
@@ -51,6 +61,21 @@ export function ReportCard({ report, onDelete }: ReportCardProps) {
     }
   }
 
+  async function handleStatusChange(status: ReportStatus) {
+    if (updatingStatus || status === currentStatus) return;
+    setUpdatingStatus(true);
+    const res = await fetch(`/api/reports/${report.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    if (res.ok) {
+      const updated = await res.json() as Report;
+      setCurrentStatus(updated.status);
+    }
+    setUpdatingStatus(false);
+  }
+
   return (
     <div className="bg-background border-b border-border px-4 py-3 transition-colors">
       <div className="flex gap-3">
@@ -63,7 +88,7 @@ export function ReportCard({ report, onDelete }: ReportCardProps) {
               {report.title}
             </p>
             <div className="flex items-center gap-1 shrink-0">
-              <StatusBadge status={report.status} />
+              <StatusBadge status={currentStatus} />
               <button
                 onClick={handleDelete}
                 disabled={deleting}
@@ -74,9 +99,11 @@ export function ReportCard({ report, onDelete }: ReportCardProps) {
               </button>
             </div>
           </div>
+
           <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
             {report.description}
           </p>
+
           {report.imageUrl && (
             <img
               src={report.imageUrl}
@@ -84,6 +111,7 @@ export function ReportCard({ report, onDelete }: ReportCardProps) {
               className="w-full h-28 object-cover rounded-xl mb-2"
             />
           )}
+
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
             <span className="flex items-center gap-1">
               <MapPin size={11} />
@@ -102,6 +130,25 @@ export function ReportCard({ report, onDelete }: ReportCardProps) {
               {upvotes}
             </button>
           </div>
+
+          {/* Admin status controls */}
+          {isAdmin && (
+            <div className="flex gap-1.5 mt-2.5 pt-2.5 border-t border-border">
+              {STATUS_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => handleStatusChange(opt.value)}
+                  disabled={updatingStatus}
+                  className={cn(
+                    "flex-1 py-1 rounded-lg text-xs font-medium border transition-colors disabled:opacity-50",
+                    currentStatus === opt.value ? opt.active : opt.idle
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

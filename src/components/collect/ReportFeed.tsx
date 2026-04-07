@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, ShieldCheck } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { FilterChips } from "./FilterChips";
 import { ReportCard } from "./ReportCard";
 import { NewReportSheet } from "./NewReportSheet";
@@ -16,6 +17,7 @@ export function ReportFeed() {
   const [filter, setFilter] = useState<Filter>("all");
   const [sheetOpen, setSheetOpen] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [adminMode, setAdminMode] = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   useEffect(() => {
@@ -47,11 +49,32 @@ export function ReportFeed() {
         title="QCollect"
         subtitle="Quezon City reports"
         right={
-          <button className="p-2 rounded-full hover:bg-muted transition-colors">
-            <Search size={18} className="text-muted-foreground" />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setAdminMode((v) => !v)}
+              title={adminMode ? "Exit admin mode" : "Enter admin mode"}
+              className={cn(
+                "p-2 rounded-full transition-colors",
+                adminMode
+                  ? "bg-primary/10 text-primary"
+                  : "hover:bg-muted text-muted-foreground"
+              )}
+            >
+              <ShieldCheck size={18} />
+            </button>
+            <button className="p-2 rounded-full hover:bg-muted transition-colors">
+              <Search size={18} className="text-muted-foreground" />
+            </button>
+          </div>
         }
       />
+
+      {adminMode && (
+        <div className="px-4 py-2 bg-primary/5 border-b border-primary/20 flex items-center gap-2">
+          <ShieldCheck size={14} className="text-primary shrink-0" />
+          <p className="text-xs text-primary font-medium">Admin mode — tap a status to update it</p>
+        </div>
+      )}
 
       <FilterChips active={filter} onChange={setFilter} />
 
@@ -73,7 +96,12 @@ export function ReportFeed() {
           </div>
         ) : (
           filtered.map((report) => (
-            <ReportCard key={report.id} report={report} onDelete={handleDelete} />
+            <ReportCard
+              key={report.id}
+              report={report}
+              onDelete={handleDelete}
+              isAdmin={adminMode}
+            />
           ))
         )}
       </div>

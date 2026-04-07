@@ -6,12 +6,12 @@ import { cn } from "@/lib/utils";
 import type { Report, ReportCategory } from "@/lib/types";
 
 const CATEGORIES: { value: ReportCategory; label: string; emoji: string; color: string }[] = [
-  { value: "flooding", label: "Flooding", emoji: "🌊", color: "bg-info/10 border-info/30" },
-  { value: "trash", label: "Trash", emoji: "🗑️", color: "bg-success/10 border-success/30" },
-  { value: "bad-driver", label: "Bad Driver", emoji: "🚗", color: "bg-warning/10 border-warning/30" },
-  { value: "accident", label: "Accident", emoji: "⚠️", color: "bg-destructive/10 border-destructive/30" },
+  { value: "flooding",     label: "Flooding",     emoji: "🌊", color: "bg-info/10 border-info/30" },
+  { value: "trash",        label: "Trash",        emoji: "🗑️", color: "bg-success/10 border-success/30" },
+  { value: "bad-driver",   label: "Bad Driver",   emoji: "🚗", color: "bg-warning/10 border-warning/30" },
+  { value: "accident",     label: "Accident",     emoji: "⚠️", color: "bg-destructive/10 border-destructive/30" },
   { value: "biodiversity", label: "Biodiversity", emoji: "🌿", color: "bg-success/10 border-success/30" },
-  { value: "other", label: "Other", emoji: "📌", color: "bg-muted border-border" },
+  { value: "other",        label: "Other",        emoji: "📌", color: "bg-muted border-border" },
 ];
 
 const MOCK_BARANGAYS = ["Batasan Hills", "Fairview", "Cubao", "Diliman", "Kamuning", "Project 6", "Commonwealth", "Novaliches"];
@@ -28,7 +28,10 @@ export function NewReportSheet({ open, onClose, onSubmit }: NewReportSheetProps)
   const [description, setDescription] = useState("");
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const selectedCat = CATEGORIES.find((c) => c.value === category) ?? null;
 
   function handlePhotoSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -47,18 +50,20 @@ export function NewReportSheet({ open, onClose, onSubmit }: NewReportSheetProps)
     setStep(1);
     setCategory(null);
     setDescription("");
+    setError(null);
     if (photoUrl) URL.revokeObjectURL(photoUrl);
     setPhotoUrl(null);
     onClose();
   }
 
   async function handleSubmit() {
-    if (submitting) return;
+    if (submitting || !category) return;
     setSubmitting(true);
+    setError(null);
     try {
       const cat = CATEGORIES.find((c) => c.value === category)!;
       const formData = new FormData();
-      formData.append("category", category!);
+      formData.append("category", category);
       formData.append("title", `${cat.label} report`);
       formData.append("description", description.trim() || "No description provided.");
       formData.append("barangay", MOCK_BARANGAYS[3]);
@@ -68,10 +73,15 @@ export function NewReportSheet({ open, onClose, onSubmit }: NewReportSheetProps)
       if (file) formData.append("photo", file);
 
       const res = await fetch("/api/reports", { method: "POST", body: formData });
-      if (!res.ok) return;
+      if (!res.ok) {
+        setError("Something went wrong. Please try again.");
+        return;
+      }
       const report = await res.json() as Report;
       handleClose();
       onSubmit(report);
+    } catch {
+      setError("Network error. Check your connection and try again.");
     } finally {
       setSubmitting(false);
     }
@@ -81,8 +91,11 @@ export function NewReportSheet({ open, onClose, onSubmit }: NewReportSheetProps)
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center">
+      {/* Backdrop — pointer-events-none on touch so it doesn't eat scroll */}
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={handleClose} />
-      <div className="relative w-full max-w-[430px] bg-background rounded-t-3xl max-h-[90vh] overflow-y-auto">
+
+      {/* Sheet — overflow-y-scroll + overscroll-contain for reliable iOS scroll */}
+      <div className="relative w-full max-w-107.5 bg-background rounded-t-3xl max-h-[85dvh] overflow-y-scroll overscroll-contain">
         {/* Handle */}
         <div className="flex justify-center pt-3 pb-1">
           <div className="w-10 h-1 bg-border rounded-full" />
@@ -100,6 +113,7 @@ export function NewReportSheet({ open, onClose, onSubmit }: NewReportSheetProps)
         </div>
 
         <div className="p-4">
+          {/* ── Step 1: pick category ── */}
           {step === 1 && (
             <>
               <p className="text-sm font-medium text-foreground mb-3">What are you reporting?</p>
@@ -122,8 +136,24 @@ export function NewReportSheet({ open, onClose, onSubmit }: NewReportSheetProps)
             </>
           )}
 
+          {/* ── Step 2: add details ── */}
           {step === 2 && (
             <>
+              {/* Selected category indicator */}
+              {selectedCat && (
+                <button
+                  onClick={() => setStep(1)}
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-1.5 rounded-xl border mb-4 text-sm font-medium",
+                    selectedCat.color
+                  )}
+                >
+                  <span>{selectedCat.emoji}</span>
+                  <span>{selectedCat.label}</span>
+                  <span className="ml-auto text-xs text-muted-foreground">change</span>
+                </button>
+              )}
+
               <p className="text-sm font-medium text-foreground mb-3">Add details</p>
               <input
                 ref={fileInputRef}
@@ -156,11 +186,11 @@ export function NewReportSheet({ open, onClose, onSubmit }: NewReportSheetProps)
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Describe the issue... (e.g., knee-deep floodwater blocking the road)"
+                placeholder="Describe the issue… (e.g., knee-deep floodwater blocking the road)"
                 className="w-full h-28 px-3 py-2.5 text-sm border border-border rounded-xl bg-background resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 text-foreground placeholder:text-muted-foreground"
               />
               <div className="flex items-center gap-2 mt-3 p-3 bg-muted/50 rounded-xl">
-                <MapPin size={14} className="text-primary flex-shrink-0" />
+                <MapPin size={14} className="text-primary shrink-0" />
                 <span className="text-xs text-muted-foreground">
                   Location: <span className="text-foreground font-medium">{MOCK_BARANGAYS[3]}</span>
                 </span>
@@ -174,13 +204,16 @@ export function NewReportSheet({ open, onClose, onSubmit }: NewReportSheetProps)
             </>
           )}
 
+          {/* ── Step 3: review ── */}
           {step === 3 && (
             <>
               <p className="text-sm font-medium text-foreground mb-3">Review your report</p>
               <div className="bg-muted/30 rounded-2xl p-4 mb-4 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Category</span>
-                  <span className="font-medium capitalize">{category?.replace("-", " ")}</span>
+                  <span className="font-medium">
+                    {selectedCat?.emoji} {selectedCat?.label}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Location</span>
@@ -201,16 +234,32 @@ export function NewReportSheet({ open, onClose, onSubmit }: NewReportSheetProps)
                   </div>
                 )}
               </div>
+
               <div className="flex items-center gap-2 bg-success/10 border border-success/30 rounded-xl p-3 mb-4">
                 <span className="text-success text-lg">⭐</span>
                 <p className="text-xs text-success font-medium">You&apos;ll earn +10 QCredit points for this report!</p>
               </div>
+
+              {error && (
+                <div className="flex items-start gap-2 bg-destructive/10 border border-destructive/30 rounded-xl p-3 mb-4">
+                  <span className="text-destructive text-sm">⚠️</span>
+                  <p className="text-xs text-destructive font-medium">{error}</p>
+                </div>
+              )}
+
               <button
                 onClick={handleSubmit}
                 disabled={submitting}
-                className="w-full py-3 bg-primary text-white font-semibold rounded-xl disabled:opacity-60"
+                className="w-full py-3 bg-primary text-white font-semibold rounded-xl disabled:opacity-60 flex items-center justify-center gap-2"
               >
-                {submitting ? "Submitting…" : "Submit Report"}
+                {submitting ? (
+                  <>
+                    <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                    Submitting…
+                  </>
+                ) : (
+                  "Submit Report"
+                )}
               </button>
             </>
           )}
