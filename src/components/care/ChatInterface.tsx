@@ -18,7 +18,7 @@ export function ChatInterface() {
     {
       id: "init",
       role: "bot",
-      content: "👋 Hi! I'm **Kaya**, your QC Loop assistant. How can I help you today?",
+      content: "👋 Hi! I'm **Qaya**, your QC Loop assistant. How can I help you today?",
       timestamp: new Date().toISOString(),
     },
   ]);
@@ -88,7 +88,7 @@ export function ChatInterface() {
 
   return (
     <div className="flex flex-col h-full">
-      <PageHeader title="QCare" subtitle="Kaya — your city assistant" />
+      <PageHeader title="QCare" subtitle="Qaya — your city assistant" />
 
       <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3">
         {messages.map((msg) => (
@@ -127,7 +127,7 @@ export function ChatInterface() {
               sendMessage(input);
             }
           }}
-          placeholder="Ask Kaya anything…"
+          placeholder="Ask Qaya anything…"
           rows={1}
           className="flex-1 resize-none text-sm border border-border rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary/50 bg-background text-foreground placeholder:text-muted-foreground max-h-24"
         />

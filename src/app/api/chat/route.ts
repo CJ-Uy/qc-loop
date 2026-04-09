@@ -5,7 +5,7 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 const SYSTEM_MESSAGE = {
   role: "system" as const,
   content:
-    "You are Kaya, a helpful assistant for Quezon City residents. You help with civic issues, city services, flood alerts, waste management, and community concerns in QC. Keep responses concise and friendly.",
+    "You are Qaya, a helpful assistant for Quezon City residents. You help with civic issues, city services, flood alerts, waste management, and community concerns in QC. Keep responses concise and friendly.",
 };
 
 interface ChatMessage {

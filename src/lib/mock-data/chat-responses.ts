@@ -34,7 +34,7 @@ export const CHAT_TOPICS: ChatTopic[] = [
 ];
 
 export const DEFAULT_RESPONSE =
-  "🤖 I'm **Kaya**, your QC Loop assistant! I can help with flood hotlines, garbage schedules, report status, barangay services, emergency contacts, and QCredit points. What do you need help with?";
+  "🤖 I'm **Qaya**, your QC Loop assistant! I can help with flood hotlines, garbage schedules, report status, barangay services, emergency contacts, and QCredit points. What do you need help with?";
 
 export const SUGGESTION_CHIPS = [
   "What's the flood hotline?",
